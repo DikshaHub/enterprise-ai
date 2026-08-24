@@ -16,9 +16,31 @@ def root():
 
 @app.post("/chat")
 def chat(request: ChatRequest):
+    results = search_chunks(request.question, 5)
+    
+    if not results:
+        return {
+            "question" : request.question,
+            "answer" : "I couldn't find the answer in the provided documents.",
+            "sources" : []
+        }
+
+    context = build_context(results)
+    answer = generate_answer(request.question, context)
+
+    sources = [
+        {
+            "filename": result["metadata"]["filename"],
+            "chunk_index": result["metadata"]["chunk_index"],
+            "text": result["text"]
+        }
+        for result in results
+    ]
+
     return {
         "question" : request.question,
-        "message" : "Question received successfully!"
+        "answer" : answer,
+        "sources" : sources
     }         
 
 @app.post("/documents/upload")
